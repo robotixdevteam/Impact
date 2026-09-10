@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Impact Kit — Data Analysis, Data Science & GenAI platform for real-time IoT sensor data visualization and prediction.">
+    <title>AI Impact Kit — Sensor Intelligence Platform</title>
+    <link rel="stylesheet" href="/css/styles.css?v=1.1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Mobile Menu Toggle -->
+<button class="mobile-toggle" id="mobileToggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<div class="app-layout">
+    <!-- ═══════ Sidebar ═══════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">⚡</div>
+                <div class="sidebar-logo-text">
+                    <h2>AI Impact Kit</h2>
+                    <span>Sensor Intelligence</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <!-- Live Dashboard -->
+            <div class="nav-item" data-view="dashboard" onclick="switchView('dashboard')">
+                <span class="nav-icon">📈</span>
+                <span>Live Dashboard</span>
+                <span class="nav-badge">LD</span>
+            </div>
+            <div class="nav-item active" data-view="analysis" onclick="switchView('analysis')">
+                <span class="nav-icon">📊</span>
+                <span>Data Analysis</span>
+                <span class="nav-badge">DA</span>
+            </div>
+            <div class="nav-item" data-view="prediction" onclick="switchView('prediction')">
+                <span class="nav-icon">🔮</span>
+                <span>Data Science</span>
+                <span class="nav-badge">DS</span>
+            </div>
+            <div class="nav-item" data-view="chat" onclick="switchView('chat')">
+                <span class="nav-icon">🤖</span>
+                <span>GenAI Assistant</span>
+                <span class="nav-badge">AI</span>
+            </div>
+            <div class="nav-item" data-view="voice" onclick="switchView('voice')">
+                <span class="nav-icon">🎙️</span>
+                <span>Voice Assistant</span>
+                <span class="nav-badge">VA</span>
+            </div>
+            <div style="flex:1"></div>
+            <div class="nav-item" onclick="openSettings()">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot sim" id="statusDot"></span>
+                <span id="statusText">Simulation Mode</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════ Main Content ═══════ -->
+    <main class="main-content">
+
+        <!-- ─── Live Dashboard View ─── -->
+        <div class="view" id="view-dashboard">
+            <div class="page-header">
+                <h1>📈 Live Dashboard</h1>
+                <p>Real-time telemetry from all connected IoT sensors</p>
+            </div>
+            
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">📡</span> Active Sensors</div>
+                    <button class="btn btn-primary btn-sm" id="btnGetValues" onclick="getDashboardValues()">
+                        ⚡ Get Values
+                    </button>
+                </div>
+                <div class="sensor-dashboard-grid" id="dashboardGrid">
+                    <!-- Dashboard cards will be dynamically injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Data Analysis View ─── -->
+        <div class="view active" id="view-analysis">
+            <div class="page-header">
+                <h1>📊 Data Analysis</h1>
+                <p>Select sensors or UNSDG goals, choose your chart type, and visualize real-time data</p>
+            </div>
+
+            <!-- Text-to-Chart Query Bar -->
+            <div class="glass-card" style="margin-bottom:24px;">
+                <div class="glass-card-header" style="margin-bottom:12px;">
+                    <div class="glass-card-title"><span class="icon">🪄</span> GenAI Text-to-Chart</div>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <input type="text" id="textToChartInput" placeholder="e.g. 'Compare temperature and humidity over 30 seconds as line chart' or 'plot gas as a pie chart'" style="flex:1; min-width:unset; padding:12px 16px;">
+                    <button class="btn btn-primary" id="btnTextToChart" onclick="askAITextToChart()">⚡ Ask AI to Plot</button>
+                </div>
+                <p id="textToChartStatus" style="font-size:0.8rem; color:var(--text-muted); margin-top:8px; display:none;"></p>
+            </div>
+
+            <!-- UNSDG Goal Cards -->
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">🌍</span> UN SDG Goals</div>
+                    <button class="btn btn-sm btn-secondary" onclick="clearUnsdgSelection()">Clear</button>
+                </div>
+                <div class="unsdg-grid" id="unsdgGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Individual Sensor Selection -->
+            <div class="glass-card section-gap">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">📡</span> Individual Sensors</div>
+                    <div class="flex gap-sm">
+                        <button class="btn btn-sm btn-secondary" onclick="selectAllSensors()">Select All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="clearSensorSelection()">Clear</button>
+                    </div>
+                </div>
+                <div class="sensor-grid" id="sensorGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Chart Controls -->
+            <div class="glass-card section-gap">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">🎛️</span> Chart Configuration</div>
+                </div>
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label>Chart Type</label>
+                        <select id="chartType">
+                            <option value="bar">Bar Chart</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="doughnut">Doughnut Chart</option>
+                            <option value="line">Line Chart</option>
+                            <option value="radar">Radar Chart</option>
+                            <option value="polarArea">Polar Area</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>X-Axis</label>
+                        <select id="xAxis">
+                            <option value="sensors">Sensor Names</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Y-Axis</label>
+                        <select id="yAxis">
+                            <option value="values">Sensor Values</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Collection Duration</label>
+                        <select id="chartDuration">
+                            <option value="snapshot" selected>Live Snapshot</option>
+                            <option value="30">30 seconds</option>
+                            <option value="60">1 minute</option>
+                            <option value="120">2 minutes</option>
+                            <option value="300">5 minutes</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateChart()">
+                        ⚡ Generate Chart
+                    </button>
+                    <button class="btn btn-ai" id="btnAskAIChart" onclick="askAIAboutChart()" disabled>
+                        ✨ Ask AI
+                    </button>
+                    <button class="btn btn-ai-suggest" onclick="askAIChartRecommendation()">
+                        💡 Suggest Chart
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Collection Progress for Analysis -->
+            <div id="analysisProgress" class="glass-card section-gap hidden">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <div class="prediction-timer" id="analysisTimer" style="margin:0; font-size:1.2rem;">00:00 / 00:30</div>
+                    <span class="phase-badge training" id="analysisStatusBadge" style="margin:0;"><span class="phase-badge-dot"></span> Collecting Telemetry...</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="analysisProgressBar"></div>
+                </div>
+                <p class="text-muted text-sm mt-sm" id="analysisProgressText">Sampling selected sensors at 1.0s intervals...</p>
+            </div>
+
+            <!-- Chart Output -->
+            <div class="chart-container section-gap" id="analysisChartContainer">
+                <div class="chart-placeholder" id="analysisPlaceholder">
+                    <span class="icon">📈</span>
+                    <p>Select sensors and click "Generate Chart" to visualize data</p>
+                </div>
+                <canvas id="analysisChart" style="display:none;"></canvas>
+            </div>
+
+            <!-- AI Insight Panel (Analysis) -->
+            <div class="ai-insight-panel hidden" id="analysisAIPanel">
+                <div class="ai-insight-header">
+                    <div class="ai-insight-title"><span class="ai-icon">✨</span> AI Insight</div>
+                    <button class="btn btn-sm btn-secondary" onclick="hideAnalysisAI()">✕ Close</button>
+                </div>
+                <div class="ai-insight-body" id="analysisAIBody"></div>
+            </div>
+        </div>
+
+        <!-- ─── Data Science (Prediction) View ─── -->
+        <div class="view" id="view-prediction">
+            <div class="page-header">
+                <h1>🔮 Data Science — Prediction</h1>
+                <p>Collect live sensor data, train models, and visualize predictions in real-time</p>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">🎯</span> Prediction Mode</div>
+                </div>
+                <div class="mode-toggle-group" id="modeToggleGroup">
+                    <div class="mode-toggle-card active" data-mode="forecast" onclick="setPredMode('forecast')">
+                        <div class="mode-radio"></div>
+                        <div class="mode-toggle-icon">🔮</div>
+                        <div class="mode-toggle-title">Future Forecast</div>
+                        <div class="mode-toggle-desc">Train model on collected data, then predict future values</div>
+                    </div>
+                    <div class="mode-toggle-card" data-mode="compare" onclick="setPredMode('compare')">
+                        <div class="mode-radio"></div>
+                        <div class="mode-toggle-icon">📊</div>
+                        <div class="mode-toggle-title">Live vs Predicted</div>
+                        <div class="mode-toggle-desc">Train on initial data, then compare live vs predicted in real-time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Setup -->
+            <div class="glass-card section-gap">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">⚙️</span> Prediction Setup</div>
+                    <button class="btn btn-sm btn-ai" onclick="askAIModelAdvice()">
+                        💡 AI Model Advisor
+                    </button>
+                </div>
+                <div class="prediction-setup">
+                    <div class="control-group">
+                        <label>Sensor</label>
+                        <select id="predSensor">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Model</label>
+                        <select id="predModel" onchange="onModelChange()">
+                            <option value="auto">Auto (Best Fit)</option>
+                            <option value="arima">ARIMA</option>
+                            <option value="sarima">SARIMA</option>
+                            <option value="lstm">LSTM</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Duration (minutes)</label>
+                        <select id="predDuration">
+                            <option value="1">1 minute</option>
+                            <option value="2">2 minutes</option>
+                            <option value="3">3 minutes</option>
+                            <option value="5" selected>5 minutes</option>
+                            <option value="10">10 minutes</option>
+                        </select>
+                    </div>
+                    <!-- Forecast Points field removed to enforce 1-minute prediction -->
+                </div>
+
+                <!-- Model Advice Panel (hidden by default) -->
+                <div id="modelAdvicePanel" class="ai-insight-panel hidden" style="margin-top: 20px; padding: 18px; border-color: rgba(34, 211, 238, 0.25);">
+                    <div class="ai-insight-header" style="margin-bottom: 10px;">
+                        <div class="ai-insight-title" style="font-size: 0.85rem;"><span class="ai-icon">💡</span> Model Advisor Recommendation</div>
+                        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('modelAdvicePanel').classList.add('hidden')">✕ Close</button>
+                    </div>
+                    <div class="ai-insight-body" id="modelAdviceBody" style="font-size: 0.82rem; line-height: 1.6;"></div>
+                </div>
+
+                <!-- Parameter Mode: Default / Custom -->
+                <div style="margin-top:20px;">
+                    <label style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;display:block;margin-bottom:8px;">Model Parameters</label>
+                    <div class="param-mode-toggle">
+                        <button class="param-toggle-btn active" id="paramDefault" onclick="setParamMode('default')">🔧 Default</button>
+                        <button class="param-toggle-btn" id="paramCustom" onclick="setParamMode('custom')">🎛️ Custom</button>
+                    </div>
+                </div>
+
+                <!-- Custom Params Panel (hidden by default) -->
+                <div class="params-panel" id="paramsPanel">
+                    <div id="paramFields">
+                        <!-- Dynamically populated by JS based on model selection -->
+                    </div>
+                </div>
+
+                <!-- Training Split Slider (compare mode only) -->
+                <div class="train-split-control hidden" id="trainSplitControl">
+                    <label>Training / Comparison Split</label>
+                    <div class="slider-row">
+                        <span class="text-xs text-muted">Train</span>
+                        <input type="range" id="trainSplitSlider" min="30" max="70" value="50"
+                               oninput="document.getElementById('trainSplitValue').textContent = this.value + '%'">
+                        <span class="slider-value" id="trainSplitValue">50%</span>
+                        <span class="text-xs text-muted">Compare</span>
+                    </div>
+                    <div class="slider-labels">
+                        <span>30% training</span>
+                        <span>70% training</span>
+                    </div>
+                </div>
+
+                <div class="controls-row" style="margin-top:20px;">
+                    <button class="btn btn-primary" id="btnStartPred" onclick="startPrediction()">
+                        🚀 Start Collection & Prediction
+                    </button>
+                    <button class="btn btn-danger hidden" id="btnCancelPred" onclick="cancelPrediction()">
+                        ✕ Cancel
+                    </button>
+                </div>
+
+                <!-- Progress -->
+                <div id="predProgress" class="hidden section-gap">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div class="prediction-timer" id="predTimer" style="margin:0;">00:00 / 05:00</div>
+                        <span id="phaseBadge" class="hidden"></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="predProgressBar"></div>
+                    </div>
+                    <p class="text-muted text-sm mt-sm" id="predStatusText">Collecting data...</p>
+                </div>
+            </div>
+
+            <!-- Prediction Chart -->
+            <div class="chart-container section-gap" id="predChartContainer">
+                <div class="chart-placeholder" id="predPlaceholder">
+                    <span class="icon">🔮</span>
+                    <p>Configure and start a prediction to see live data with model overlay</p>
+                </div>
+                <canvas id="predChart" style="display:none;"></canvas>
+            </div>
+
+            <!-- Model Info (shown after prediction) -->
+            <div class="glass-card section-gap hidden" id="modelInfoCard">
+                <div class="glass-card-header">
+                    <div class="glass-card-title"><span class="icon">🧠</span> Model Results</div>
+                    <button class="btn btn-sm btn-ai" id="btnExplainPred" onclick="askAIAboutPrediction()">✨ Explain Results</button>
+                </div>
+                <div class="model-info" id="modelInfo"></div>
+            </div>
+
+            <!-- AI Insight Panel (Prediction) -->
+            <div class="ai-insight-panel hidden" id="predictionAIPanel">
+                <div class="ai-insight-header">
+                    <div class="ai-insight-title"><span class="ai-icon">✨</span> AI Explanation</div>
+                    <button class="btn btn-sm btn-secondary" onclick="hidePredictionAI()">✕ Close</button>
+                </div>
+                <div class="ai-insight-body" id="predictionAIBody"></div>
+            </div>
+        </div>
+
+        <!-- ─── GenAI Chat View ─── -->
+        <div class="view" id="view-chat">
+            <div class="page-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1>🤖 GenAI Assistant</h1>
+                        <p>Ask about sensor readings, get insights, or have a natural conversation</p>
+                    </div>
+                    <div class="flex gap-sm">
+                        <button class="btn btn-sm btn-secondary" id="btnVoiceToggle" onclick="toggleVoiceOutput()">
+                            🔇 Voice Output
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="clearChat()">🗑️ Clear Chat</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card chat-layout">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-bubble assistant">
+                        👋 Hello! I'm your <strong>AI Impact Kit Assistant</strong>. I can read real-time sensor data from your IoT device. Try asking me:
+                        <br><br>
+                        • "What is the temperature right now?"<br>
+                        • "Read all sensors and summarize"<br>
+                        • "How are the Zero Hunger indicators?"<br>
+                        • "Is the air quality safe?"
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <button class="btn btn-secondary btn-icon" id="btnMic" onclick="toggleMicRecord()" title="Record speech input">
+                        🎤
+                    </button>
+                    <input type="text" id="chatInput" placeholder="Ask about sensor data, UNSDG goals, or speak..." 
+                           onkeydown="if(event.key==='Enter')sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">Send ➤</button>
+                </div>
+            </div>
+        </div>
+        <!-- ─── Voice Assistant View ─── -->
+        <div class="view" id="view-voice">
+            <div class="siri-container">
+                <button class="btn btn-sm btn-glass clear-siri" onclick="clearVoiceChat()">🗑️ Reset</button>
+                
+                <!-- Center Orb -->
+                <div class="siri-orb-wrapper" onclick="toggleMainVoiceMic()">
+                    <div class="siri-orb" id="siriOrb"></div>
+                    <div class="siri-orb-glow" id="siriOrbGlow"></div>
+                </div>
+
+                <!-- Text Display -->
+                <div class="siri-text-container">
+                    <div class="siri-status" id="siriStatus">TAP ORB TO WAKE</div>
+                    <div class="siri-user-text" id="siriUserText"></div>
+                    <div class="siri-ai-text" id="siriAiText">Hello, how can I help you today?</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ═══════ Settings Modal ═══════ -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-content">
+        <h2>⚙️ Settings</h2>
+        <div class="control-group" style="margin-bottom:16px;">
+            <label>Sensor IP Address</label>
+            <input type="text" id="settingSensorIP" placeholder="192.168.4.1">
+        </div>
+        <div class="control-group" style="margin-bottom:16px;">
+            <label>Mode</label>
+            <select id="settingSimMode">
+                <option value="true">Simulation (no hardware)</option>
+                <option value="false">Live (connect to ESP32)</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="/js/app.js"></script>
+<script src="/js/dashboard.js?v=1.2"></script>
+<script src="/js/analysis.js?v=2.0"></script>
+<script src="/js/prediction.js?v=1.2"></script>
+<script src="/js/chat.js"></script>
+<script src="/js/voice.js?v=1.1"></script>
+</body>
+</html>
